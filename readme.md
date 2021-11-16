@@ -18,6 +18,6 @@ Adjust the parameters at the top for your needs.
 You may want to experiment with different orientations and support settings.
 
 See photos folder for more photos.
-![Photo1](photos/photo1.png)
+![Photo1](photos/photo01.png)
 
 Watch face: [Mickey](https://github.com/spinalcode/Mickey) by @spinalcode
