@@ -16,6 +16,7 @@ Adjust the parameters at the top for your needs.
 - As the screen is placed manually the top may not fit exactly - adjust the `p_screen_from_pcb_top` parameter to suit your copy.
 - Printing the top may be tricky, depending on your printer capabilities. 
 You may want to experiment with different orientations and support settings.
+- The included STLs are for a **22mm** strap!
 
 See photos folder for more photos.
 ![Photo1](photos/photo01.png)
