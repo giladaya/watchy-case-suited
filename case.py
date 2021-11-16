@@ -15,7 +15,7 @@ p_layer_th = 0.12 # Thickness of print layer
 p_flipTop = True # should flip the top
 
 # Screws
-p_num_screw_holes = 2 #Screws on each side (1 or 2)
+p_num_screw_holes = 0 #Screws on each side (0, 1 or 2)
 p_screwpostID = 1.5 #Inner Diameter of the screw post holes, should be roughly screw diameter not including threads
 p_boreDiameter = 4.5 #Diameter of the counterbore hole, if any
 p_boreDepth = 0.5 #Depth of the counterbore hole, if
@@ -112,11 +112,11 @@ box = (box
 # side cuts (buttons, etc)
 pcb_top = pcb_h / 2.0
 pcb_top_to_top_button = 7.5
-top_button_to_usb = 7.75
-usb_to_bottom_button = 6.5
+top_button_to_usb = 8.25
+usb_to_bottom_button = 7.15
 button_width  = 4.6
-button_height = 2.0
-usb_b_width  = 7.4
+button_height = 2.5
+usb_b_width  = 6.4
 usb_b_height = 3.0
 
 holes_left = (cq.Workplane("YZ")
@@ -190,6 +190,29 @@ bHoles_right = (cq.Workplane("YZ")
   .extrude(p_outerWidth / 2.0)
 )
 
+bCovers = (cq.Workplane("YZ")
+  .workplane(
+    origin=(
+        0, 
+        p_outerLength / 2.0 - pcb_top_to_top_button - button_width / 2, 
+        p_outerHeight - p_inset_depth - 1.5
+    ), 
+    offset=p_outerWidth / 2.0 - p_thickness)
+  .rect(button_width - 1, button_height + p_inset_depth + 1)
+  .extrude(2 * p_thickness)
+  .edges("|X")
+  .fillet(1)
+  .edges("#X and >X")
+  .fillet(0.9)
+  .mirror("ZY", union=True)
+  .mirror("XZ", union=True)
+)
+
+
+#debug(bCovers)
+
+box = box.union(bCovers)
+
 with_side_holes = (box
   .cut(holes_left)
   .cut(holes_right)
@@ -207,13 +230,13 @@ pcb_inset = (cq.Workplane("XY")
   .vertices()
   .circle(slot_post_dia / 2.0)
   .extrude(-p_inset_depth)
-  .edges("|Z")
-  .fillet(pcb_radius)
 )
 with_inset = with_side_holes.cut(pcb_inset)
 
 # Top cover
-if p_num_screw_holes == 1:
+if p_num_screw_holes == 0:
+  fastener_hole_points = []
+elif p_num_screw_holes == 1:
   fastener_hole_points = [(0, p_outerHeight * 0.75 - 0.5)]
 elif p_num_screw_holes == 2:
   fastener_hole_points = [
@@ -237,7 +260,7 @@ poleCenters = [
   (0, -(pcb_h / 2.0 - pcb_y_to_slot - pcb_slot_h / 2.0))
 ]
 pole_thickness = pcb_slot_h - 0.6
-pole_hole_depth = p_outerHeight / 2.0 + 0.5
+pole_hole_depth = p_outerHeight / 2.0 + 0.3
 
 top = (top.faces("<Z")
   .workplane(offset=0)
@@ -254,7 +277,35 @@ top = (top.faces("<Z")
   # so the top won't deform 
   .hole(p_screwpostID + 0.7, p_outerLength)
 )
-# screen holes
+
+bump_rad = 1
+
+poleBumps = (cq.Workplane("YZ")
+            .moveTo(pcb_h / 2.0 - pcb_y_to_slot - pcb_slot_h / 2.0 - pole_thickness / 2, 
+                    p_outerHeight - pole_hole_depth)
+            .radiusArc((pcb_h / 2.0 - pcb_y_to_slot - pcb_slot_h / 2.0 - pole_thickness / 2, 
+                    p_outerHeight - pole_hole_depth + 2), 1.8 - p_tolerance, forConstruction=False)
+            .close()
+            .extrude(p_fastener_width / 2 - pole_thickness, both=True)
+            .mirror("XZ", union=True)
+            )
+#debug(poleBumps)
+if p_num_screw_holes == 0:
+    top = top.union(poleBumps)
+
+poleBump_sockets = (cq.Workplane("YZ")
+            .moveTo(pcb_h / 2.0 - pcb_y_to_slot - pcb_slot_h / 2.0 - pole_thickness / 2, 
+                    p_outerHeight - (pole_hole_depth + (p_tolerance - 0.3)))
+            .radiusArc((pcb_h / 2.0 - pcb_y_to_slot - pcb_slot_h / 2.0 - pole_thickness / 2, 
+                    p_outerHeight - (pole_hole_depth + (p_tolerance - 0.3)) + 2), 2, forConstruction=False)
+            .close()
+            .extrude((p_fastener_width + p_tolerance) / 2, both=True)
+            .translate((0, -p_tolerance / 2, 0))
+            .mirror("XZ", union=True)
+            )
+#debug(poleBump_sockets)
+
+# screen holes2
 top_fillets = 0.75
 window_cy = 3.05
 top = (top.faces(">Z")
@@ -310,21 +361,27 @@ pole_sockets = (cq.Workplane("XY")
   .extrude(-p_outerHeight)
 )
 
-with_top_holes = (with_inset
-  .faces("|Y and >Y")
-  .workplane(origin=(0, 0, 0), offset=0.0)
-  .pushPoints( fastener_hole_points )
-  #.hole(p_screwpostID, p_outerLength)
-  #.cboreHole(p_screwpostID, p_boreDiameter, p_boreDepth)
-  .cskHole(p_screwpostID, p_countersinkDiameter, p_countersinkAngle)
-  .faces("|Y and <Y")
-  .workplane(origin=(0, 0, 0), offset=0.0)
-  .pushPoints( fastener_hole_points )
-  #.hole(p_screwpostID, p_outerLength)
-  #.cboreHole(p_screwpostID, p_boreDiameter, p_boreDepth)
-  .cskHole(p_screwpostID, p_countersinkDiameter, p_countersinkAngle)
-  .cut(pole_sockets) 
-)
+if p_num_screw_holes > 0:
+  with_top_holes = (with_inset
+      .faces("|Y and >Y")
+      .workplane(origin=(0, 0, 0), offset=0.0)
+      .pushPoints( fastener_hole_points )
+      #.hole(p_screwpostID, p_outerLength)
+      #.cboreHole(p_screwpostID, p_boreDiameter, p_boreDepth)
+      .cskHole(p_screwpostID, p_countersinkDiameter, p_countersinkAngle)
+      .faces("|Y and <Y")
+      .workplane(origin=(0, 0, 0), offset=0.0)
+      .pushPoints( fastener_hole_points )
+      #.hole(p_screwpostID, p_outerLength)
+      #.cboreHole(p_screwpostID, p_boreDiameter, p_boreDepth)
+      .cskHole(p_screwpostID, p_countersinkDiameter, p_countersinkAngle)
+      .cut(pole_sockets) 
+    )
+else:
+    with_top_holes = with_inset.cut(pole_sockets)
+  
+if p_num_screw_holes == 0:
+    with_top_holes = with_top_holes.cut(poleBump_sockets)
 
 # Strap Lugs
 tbar_hole_depth = 1.5
@@ -356,7 +413,7 @@ lugs = (cq.Workplane("ZY")
   .mirror("XZ", union=True)
 )
 #debug(lugs)
-with_top_holes = with_top_holes.union(lugs)
+with_lugs = with_top_holes.union(lugs)
 
 if p_flipTop:
   top = (top
@@ -370,7 +427,7 @@ else:
     .translate((-p_outerWidth - 1.0, 0, -(p_outerHeight-pole_hole_depth)))
   )
 
-result = (with_top_holes
+result = (with_lugs
   .union(top)
 )
 
@@ -378,4 +435,4 @@ result = (with_top_holes
 show_object(result)
 cq.exporters.export(result, "watchy-wide.stl")
 cq.exporters.export(top, "watchy-wide-top.stl")
-cq.exporters.export(with_top_holes, "watchy-wide-body.stl")
+cq.exporters.export(with_lugs, "watchy-wide-body.stl")
