@@ -433,6 +433,6 @@ result = (with_lugs
 
 #return the combined result
 show_object(result)
-cq.exporters.export(result, "watchy-wide.stl")
-cq.exporters.export(top, "watchy-wide-top.stl")
-cq.exporters.export(with_lugs, "watchy-wide-body.stl")
+# cq.exporters.export(result, "STLs/watchy-suited.stl")
+cq.exporters.export(top, "STLs/watchy-suited-top.stl")
+cq.exporters.export(with_lugs, "STLs/watchy-suited-body.stl")

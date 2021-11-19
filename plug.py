@@ -56,4 +56,4 @@ result = full.intersect(bounding).rotate((0,0,0),(1,0,0), 90)
 
 #return the combined result
 show_object(result)
-cq.exporters.export(result, "micro-usb-plug.stl")
+cq.exporters.export(result, "STLs/micro-usb-plug.stl")
